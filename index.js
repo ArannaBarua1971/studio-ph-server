@@ -22,6 +22,7 @@ export async function connectToMongoDB() {
 const dbClient = await connectToMongoDB();
 const db = dbClient.db("StudioSpace");
 const StudioCollections = db.collection("studios");
+const bookingStudioCollections = db.collection("booking_studios");
 
 app.get("/studios", async (req, res) => {
   const data = await StudioCollections.find({}).toArray();
@@ -29,17 +30,18 @@ app.get("/studios", async (req, res) => {
   res.send({ data });
 });
 app.get("/studios/:category", async (req, res) => {
-    const { category } = req.params;
+  const { category } = req.params;
 
-    const data = await StudioCollections.find({ category }).toArray();
+  const data = await StudioCollections.find({ category }).toArray();
 
-    res.send({ data });
+  res.send({ data });
 });
 
 app.post("/studios", async (req, res) => {
   const data = await StudioCollections.insertOne(req.body);
   res.send({ data });
 });
+
 app.get("/category", async (req, res) => {
   const data = await StudioCollections.aggregate([
     {
@@ -51,7 +53,8 @@ app.get("/category", async (req, res) => {
   ]).toArray();
   res.send({ data });
 });
-app.get("/studios/:id", async (req, res) => {
+app.get("/studioDetails/:id", async (req, res) => {
+  console.log(req.params);
   const id = new ObjectId(req.params.id);
   const data = await StudioCollections.findOne({ _id: id });
 
@@ -69,6 +72,38 @@ app.delete("/mylistings/:id", async (req, res) => {
     _id: new ObjectId(req.params.id),
   });
 
+  res.send({ data });
+});
+
+app.post("/bookingStudio", async (req, res) => {
+  const data = await bookingStudioCollections.insertOne(req.body);
+  res.send({ data });
+});
+app.get("/checkBookingStudio", async (req, res) => {
+  const { user_email, studio_id } = req.query;
+  const data = await bookingStudioCollections.findOne({
+    user_email,
+    studio_id,
+  });
+  res.send({ data });
+});
+app.get("/bookingStudio/:email", async (req, res) => {
+  const data = await bookingStudioCollections
+    .find({
+      user_email: req.params.email,
+    })
+    .toArray();
+  res.send({ data });
+});
+app.patch("/bookingStudio/:id", async (req, res) => {
+  const data = await bookingStudioCollections.updateOne(
+    {
+      _id: new ObjectId(req.params.id),
+    },
+    {
+      $set: {status:"Cancelled"},
+    },
+  );
   res.send({ data });
 });
 
