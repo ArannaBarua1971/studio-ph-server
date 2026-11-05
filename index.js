@@ -2,6 +2,7 @@ import express from "express";
 import "dotenv/config";
 import cors from "cors";
 import { MongoClient, ObjectId } from "mongodb";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -24,6 +25,27 @@ const db = dbClient.db("StudioSpace");
 const StudioCollections = db.collection("studios");
 const bookingStudioCollections = db.collection("booking_studios");
 
+const verifyApi = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    res.status(401).send("unauthorized");
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    res.status(401).send("unauthorized");
+  }
+
+  try {
+    const JWKS = createRemoteJWKSet(
+      new URL("http://localhost:3000/api/auth/jwks"),
+    );
+    const { payload } = await jwtVerify(token, JWKS);
+    next();
+  } catch (error) {
+    res.status(401).send("unauthorized");
+  }
+};
+
 app.get("/studios", async (req, res) => {
   const data = await StudioCollections.find({}).toArray();
 
@@ -37,11 +59,11 @@ app.get("/studios/:category", async (req, res) => {
   res.send({ data });
 });
 
-app.post("/studios", async (req, res) => {
+app.post("/studios",verifyApi, async (req, res) => {
   const data = await StudioCollections.insertOne(req.body);
   res.send({ data });
 });
-app.patch("/studios", async (req, res) => {
+app.patch("/studios",verifyApi, async (req, res) => {
   const { _id, ...data } = req.body;
   await StudioCollections.updateOne(
     { _id: new ObjectId(_id) },
@@ -69,14 +91,14 @@ app.get("/studioDetails/:id", async (req, res) => {
 
   res.send({ data });
 });
-app.get("/mylistings/:email", async (req, res) => {
+app.get("/mylistings/:email",verifyApi, async (req, res) => {
   const data = await StudioCollections.find({
     user_email: req.params.email,
   }).toArray();
 
   res.send({ data });
 });
-app.delete("/mylistings/:id", async (req, res) => {
+app.delete("/mylistings/:id",verifyApi, async (req, res) => {
   const data = await StudioCollections.deleteOne({
     _id: new ObjectId(req.params.id),
   });
@@ -84,7 +106,7 @@ app.delete("/mylistings/:id", async (req, res) => {
   res.send({ data });
 });
 
-app.post("/bookingStudio", async (req, res) => {
+app.post("/bookingStudio",verifyApi, async (req, res) => {
   const data = await bookingStudioCollections.insertOne(req.body);
   res.send({ data });
 });
@@ -96,7 +118,7 @@ app.get("/checkBookingStudio", async (req, res) => {
   });
   res.send({ data });
 });
-app.get("/bookingStudio/:email", async (req, res) => {
+app.get("/bookingStudio/:email",verifyApi, async (req, res) => {
   const data = await bookingStudioCollections
     .find({
       user_email: req.params.email,
@@ -104,7 +126,7 @@ app.get("/bookingStudio/:email", async (req, res) => {
     .toArray();
   res.send({ data });
 });
-app.patch("/bookingStudio/:id", async (req, res) => {
+app.patch("/bookingStudio/:id",verifyApi, async (req, res) => {
   const data = await bookingStudioCollections.updateOne(
     {
       _id: new ObjectId(req.params.id),
