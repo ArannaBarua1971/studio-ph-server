@@ -138,6 +138,10 @@ app.patch("/bookingStudio/:id",verifyApi, async (req, res) => {
   res.send({ data });
 });
 
+app.get("/",(req,res)=>{
+  res.send({message:"server worked"})
+})
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
