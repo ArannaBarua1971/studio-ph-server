@@ -41,6 +41,16 @@ app.post("/studios", async (req, res) => {
   const data = await StudioCollections.insertOne(req.body);
   res.send({ data });
 });
+app.patch("/studios", async (req, res) => {
+  const { _id, ...data } = req.body;
+  await StudioCollections.updateOne(
+    { _id: new ObjectId(_id) },
+    {
+      $set: data,
+    },
+  );
+  res.send({ data });
+});
 
 app.get("/category", async (req, res) => {
   const data = await StudioCollections.aggregate([
@@ -54,7 +64,6 @@ app.get("/category", async (req, res) => {
   res.send({ data });
 });
 app.get("/studioDetails/:id", async (req, res) => {
-  console.log(req.params);
   const id = new ObjectId(req.params.id);
   const data = await StudioCollections.findOne({ _id: id });
 
@@ -101,7 +110,7 @@ app.patch("/bookingStudio/:id", async (req, res) => {
       _id: new ObjectId(req.params.id),
     },
     {
-      $set: {status:"Cancelled"},
+      $set: { status: "Cancelled" },
     },
   );
   res.send({ data });
